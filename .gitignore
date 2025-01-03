@@ -1,0 +1,12 @@
+build/
+cmake/
+CMakeFiles/
+.mxproject
+startup_stm32f103xb.s
+stm32f103c8tx_flash.ld
+build.ninja
+cmake_install.cmake
+CMakeCache.txt
+compile_commands.json
+CMakePresets.json
+

@@ -3,7 +3,7 @@
 
 #include "main.h"  // Adjust this include based on your STM32 series
 
-#define CMPS12_I2C_ADDRESS 0xC0
+#define CMPS12_I2C_ADDRESS 0x60
 
 // Register definitions
 #define SOFTWARE_REVISION_REG    0x00

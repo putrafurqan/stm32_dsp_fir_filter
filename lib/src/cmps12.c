@@ -65,9 +65,9 @@ void CMPS12_Calibrate(CMPS12_Data *cmps12) {
     uint8_t calibrate_data3 = 0xF6;
 
     CMPS12_WriteRegister(cmps12, registerNumber, &calibrate_data1, 1);
-    HAL_Delay(25);
+    // HAL_Delay(25);
     CMPS12_WriteRegister(cmps12, registerNumber, &calibrate_data2, 1);
-    HAL_Delay(25);
+    // HAL_Delay(25);
     CMPS12_WriteRegister(cmps12, registerNumber, &calibrate_data3, 1);
 }
 

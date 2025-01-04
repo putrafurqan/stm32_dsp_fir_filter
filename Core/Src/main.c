@@ -26,7 +26,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "arm_math.h"
+#include "cmps12.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -36,7 +37,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define FILTER_LENGTH 100
+#define FIR_LENGTH      9
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -47,6 +49,24 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+
+// Filter Variable
+float32_t fir_coefficients[FIR_LENGTH] = {0.0594,0.0930,0.1273,0.1642,0.1692,0.1642,0.1273,0.0930,0.0594};
+int16_t buffer_fir[FIR_LENGTH];
+int16_t counter_fir;
+
+int16_t buffer_filter[FIR_LENGTH];
+int16_t counter_filter;
+
+float32_t fir_out, fir_out_arm_buffer[FIR_LENGTH];
+
+arm_fir_instance_f32 fir_instance;
+float32_t fir_in_arm, fir_out_arm, fir_state_arm[FIR_LENGTH];
+
+// Motor Variables
+float motor_rps = 0.0;
+
+CMPS12_Data cmps12;
 
 /* USER CODE END PV */
 
@@ -69,7 +89,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -85,7 +105,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
+  arm_fir_init_f32(&fir_instance, FIR_LENGTH, fir_coefficients, fir_state_arm, 1);
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -97,13 +117,21 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-
+  CMPS12_Init(&cmps12, &hi2c2); 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
+    uint16_t angle = CMPS12_GetAngle(&cmps12);
+    int8_t pitch = CMPS12_GetPitch(&cmps12);
+    int8_t roll = CMPS12_GetRoll(&cmps12);
+    int16_t temp = CMPS12_GetTemp(&cmps12);
+
+    fir_in_arm = (float32_t) motor_rps; 
+    arm_fir_f32(&fir_instance, &fir_in_arm, &fir_out_arm, 1);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

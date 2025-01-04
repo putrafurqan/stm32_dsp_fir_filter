@@ -2,8 +2,6 @@
 
 This project implements a Lowpass FIR filter on the STM32 microcontroller to filter IMU (Inertial Measurement Unit) data. The filter design is based on the CMSIS DSP library.
 
-[TOC]
-
 ## Filter Specifications
 
 ### 10th Order Filter

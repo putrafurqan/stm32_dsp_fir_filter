@@ -58,15 +58,26 @@ int16_t counter_fir;
 int16_t buffer_filter[FIR_LENGTH];
 int16_t counter_filter;
 
-float32_t fir_out, fir_out_arm_buffer[FIR_LENGTH];
+float32_t fir_out_pitch, fir_out_roll;
+float32_t fir_in_pitch, fir_in_roll;
 
-arm_fir_instance_f32 fir_instance;
-float32_t fir_in_arm, fir_out_arm, fir_state_arm[FIR_LENGTH];
+// FIR filter instances
+arm_fir_instance_f32 fir_instance_pitch;
+arm_fir_instance_f32 fir_instance_roll;
+
+float32_t fir_state_pitch[FIR_LENGTH];
+float32_t fir_state_roll[FIR_LENGTH];
 
 // Motor Variables
 float motor_rps = 0.0;
 
+// CMPS12 Variables
 CMPS12_Data cmps12;
+uint16_t angle, temp;
+int8_t pitch, roll;
+
+// Filtered Variables
+float32_t filtered_pitch, filtered_roll;
 
 /* USER CODE END PV */
 
@@ -105,7 +116,9 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  arm_fir_init_f32(&fir_instance, FIR_LENGTH, fir_coefficients, fir_state_arm, 1);
+  // Initialize FIR filter instances
+  arm_fir_init_f32(&fir_instance_pitch, FIR_LENGTH, fir_coefficients, fir_state_pitch, 1);
+  arm_fir_init_f32(&fir_instance_roll, FIR_LENGTH, fir_coefficients, fir_state_roll, 1);
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -124,14 +137,21 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    // Read raw sensor data
+    angle = CMPS12_GetAngle(&cmps12);
+    pitch = CMPS12_GetPitch(&cmps12);
+    roll  = CMPS12_GetRoll(&cmps12);
+    temp  = CMPS12_GetTemp(&cmps12);
 
-    uint16_t angle = CMPS12_GetAngle(&cmps12);
-    int8_t pitch = CMPS12_GetPitch(&cmps12);
-    int8_t roll = CMPS12_GetRoll(&cmps12);
-    int16_t temp = CMPS12_GetTemp(&cmps12);
+    // Apply FIR filter to pitch
+    fir_in_pitch = (float32_t)pitch; 
+    arm_fir_f32(&fir_instance_pitch, &fir_in_pitch, &fir_out_pitch, 1);
+    filtered_pitch = fir_out_pitch;  // Store the filtered pitch
 
-    fir_in_arm = (float32_t) motor_rps; 
-    arm_fir_f32(&fir_instance, &fir_in_arm, &fir_out_arm, 1);
+    // Apply FIR filter to roll
+    fir_in_roll = (float32_t)roll; 
+    arm_fir_f32(&fir_instance_roll, &fir_in_roll, &fir_out_roll, 1);
+    filtered_roll = fir_out_roll;  // Store the filtered roll
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

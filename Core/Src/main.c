@@ -37,8 +37,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define FILTER_LENGTH 100
-#define FIR_LENGTH      9
+#define FILTER_LENGTH 50
+#define FIR_LENGTH      11
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -50,34 +50,36 @@
 
 /* USER CODE BEGIN PV */
 
-// Filter Variable
-
-
 // FIR filter instances ========================
-float32_t fir_coefficients[FIR_LENGTH] = {0.0594,0.0930,0.1273,0.1642,0.1692,0.1642,0.1273,0.0930,0.0594};
-int16_t buffer_fir[FIR_LENGTH];
-int16_t counter_fir;
+float32_t fir_coefficients[FIR_LENGTH] = {-0.0220, -0.0339, 0.0072, 0.1235, 0.2618, 0.3244, 0.2618, 0.1235, 0.0072, -0.0339, -0.0220};
+arm_fir_instance_f32 fir_instance_accel_x;
+arm_fir_instance_f32 fir_instance_accel_y;
+arm_fir_instance_f32 fir_instance_accel_z;
+arm_fir_instance_f32 fir_instance_gyro_x;
+arm_fir_instance_f32 fir_instance_gyro_y;
+arm_fir_instance_f32 fir_instance_gyro_z;
 
-int16_t buffer_filter[FIR_LENGTH];
-int16_t counter_filter;
+float32_t fir_state_accel_x[FIR_LENGTH];
+float32_t fir_state_accel_y[FIR_LENGTH];
+float32_t fir_state_accel_z[FIR_LENGTH];
+float32_t fir_state_gyro_x[FIR_LENGTH];
+float32_t fir_state_gyro_y[FIR_LENGTH];
+float32_t fir_state_gyro_z[FIR_LENGTH];
 
-arm_fir_instance_f32 fir_instance_pitch;
-arm_fir_instance_f32 fir_instance_roll;
+float32_t fir_in_accel_x, fir_in_accel_y, fir_in_accel_z;
+float32_t fir_in_gyro_x, fir_in_gyro_y, fir_in_gyro_z;
 
-float32_t fir_state_pitch[FIR_LENGTH];
-float32_t fir_state_roll[FIR_LENGTH];
+float32_t fir_out_accel_x, fir_out_accel_y, fir_out_accel_z;
+float32_t fir_out_gyro_x, fir_out_gyro_y, fir_out_gyro_z;
 
-float32_t fir_out_pitch, fir_out_roll;
-float32_t fir_in_pitch, fir_in_roll;
+float32_t filtered_accel_x, filtered_accel_y, filtered_accel_z;
+float32_t filtered_gyro_x, filtered_gyro_y, filtered_gyro_z;
 
-float32_t filtered_pitch, filtered_roll;
-// --------------------------------------------
-
-// CMPS12 Variables ============================
-CMPS12_Data cmps12;
+// Sensor Variables ============================
+CMPS12_Data cmps12;  
 uint16_t angle, temp;
-int8_t pitch, roll;
-// --------------------------------------------
+int16_t accel_x, accel_y, accel_z;  // Raw accelerometer data
+int16_t gyro_x, gyro_y, gyro_z;      // Raw gyroscope data
 
 /* USER CODE END PV */
 
@@ -100,7 +102,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -116,9 +118,7 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  // Initialize FIR filter instances
-  arm_fir_init_f32(&fir_instance_pitch, FIR_LENGTH, fir_coefficients, fir_state_pitch, 1);
-  arm_fir_init_f32(&fir_instance_roll, FIR_LENGTH, fir_coefficients, fir_state_roll, 1);
+
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -130,32 +130,73 @@ int main(void)
   MX_TIM3_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-  CMPS12_Init(&cmps12, &hi2c2); 
+    // Initialize FIR filter instances
+    arm_fir_init_f32(&fir_instance_accel_x, FIR_LENGTH, fir_coefficients, fir_state_accel_x, 1);
+    arm_fir_init_f32(&fir_instance_accel_y, FIR_LENGTH, fir_coefficients, fir_state_accel_y, 1);
+    arm_fir_init_f32(&fir_instance_accel_z, FIR_LENGTH, fir_coefficients, fir_state_accel_z, 1);
+    arm_fir_init_f32(&fir_instance_gyro_x, FIR_LENGTH, fir_coefficients, fir_state_gyro_x, 1);
+    arm_fir_init_f32(&fir_instance_gyro_y, FIR_LENGTH, fir_coefficients, fir_state_gyro_y, 1);
+    arm_fir_init_f32(&fir_instance_gyro_z, FIR_LENGTH, fir_coefficients, fir_state_gyro_z, 1);
+
+    // Initialize your sensor (replace with actual initialization function)
+    CMPS12_Init(&cmps12, &hi2c2); 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    // Read raw sensor data
-    angle = CMPS12_GetAngle(&cmps12);
-    pitch = CMPS12_GetPitch(&cmps12);
-    roll  = CMPS12_GetRoll(&cmps12);
-    temp  = CMPS12_GetTemp(&cmps12);
+    while (1) {
+        // Read raw sensor data (replace with actual functions to read accelerometer and gyroscope)
+        accel_x = CMPS12_GetAccelX(&cmps12);
+        accel_y = CMPS12_GetAccelY(&cmps12);
+        accel_z = CMPS12_GetAccelZ(&cmps12);
+        gyro_x = CMPS12_GetGyroX(&cmps12);
+        gyro_y = CMPS12_GetGyroY(&cmps12);
+        gyro_z = CMPS12_GetGyroZ(&cmps12);
 
-    // Apply FIR filter to pitch
-    fir_in_pitch = (float32_t)pitch; 
-    arm_fir_f32(&fir_instance_pitch, &fir_in_pitch, &fir_out_pitch, 1);
-    filtered_pitch = fir_out_pitch;  // Store the filtered pitch
+        // Apply FIR filter to accelerometer data
+        fir_in_accel_x = (float32_t)accel_x;
+        arm_fir_f32(&fir_instance_accel_x, &fir_in_accel_x, &fir_out_accel_x, 1);
+        filtered_accel_x = fir_out_accel_x;  // Store the filtered accelerometer x
 
-    // Apply FIR filter to roll
-    fir_in_roll = (float32_t)roll; 
-    arm_fir_f32(&fir_instance_roll, &fir_in_roll, &fir_out_roll, 1);
-    filtered_roll = fir_out_roll;  // Store the filtered roll
+        fir_in_accel_y = (float32_t)accel_y;
+        arm_fir_f32(&fir_instance_accel_y, &fir_in_accel_y, &fir_out_accel_y, 1);
+        filtered_accel_y = fir_out_accel_y;  // Store the filtered accelerometer y
+
+        fir_in_accel_z = (float32_t)accel_z;
+        arm_fir_f32(&fir_instance_accel_z, &fir_in_accel_z, &fir_out_accel_z, 1);
+        filtered_accel_z = fir_out_accel_z;  // Store the filtered accelerometer z
+
+        // Apply FIR filter to gyroscope data
+        fir_in_gyro_x = (float32_t)gyro_x;
+        arm_fir_f32(&fir_instance_gyro_x, &fir_in_gyro_x, &fir_out_gyro_x, 1);
+        filtered_gyro_x = fir_out_gyro_x;  // Store the filtered gyroscope x
+
+        fir_in_gyro_y = (float32_t)gyro_y;
+        arm_fir_f32(&fir_instance_gyro_y, &fir_in_gyro_y, &fir_out_gyro_y, 1);
+        filtered_gyro_y = fir_out_gyro_y;  // Store the filtered gyroscope y
+
+        fir_in_gyro_z = (float32_t)gyro_z;
+        arm_fir_f32(&fir_instance_gyro_z, &fir_in_gyro_z, &fir_out_gyro_z, 1);
+        filtered_gyro_z = fir_out_gyro_z;  // Store the filtered gyroscope z
+
+        // Prepare the data to send over USART
+        char data_buffer[200];  // Buffer to hold the formatted string
+        int len = snprintf(data_buffer, sizeof(data_buffer), "x_f %.2f y_f %.2f z_f %.2f x %d y %d z %d\r\n",
+                           filtered_accel_x, filtered_accel_y, filtered_accel_z,
+                           accel_x, accel_y, accel_z);
+
+        // Send the data over USART
+        if (len > 0) {
+            HAL_UART_Transmit(&huart1, (uint8_t*)data_buffer, len, HAL_MAX_DELAY);
+        }
+
+        // Optional: Add a delay if needed to control the output rate
+        // HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+        // HAL_Delay(50);  // Adjust the delay as necessary
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
   /* USER CODE END 3 */
 }
 
@@ -209,11 +250,10 @@ void SystemClock_Config(void)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  __disable_irq();
-  while (1)
-  {
-  }
+    /* User can add his own implementation to report the HAL error return state */
+    __disable_irq();
+    while (1) {
+    }
   /* USER CODE END Error_Handler_Debug */
 }
 
@@ -228,8 +268,8 @@ void Error_Handler(void)
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
-     ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+    /* User can add his own implementation to report the file name and line number,
+       ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */

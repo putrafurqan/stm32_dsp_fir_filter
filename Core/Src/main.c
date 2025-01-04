@@ -51,6 +51,9 @@
 /* USER CODE BEGIN PV */
 
 // Filter Variable
+
+
+// FIR filter instances ========================
 float32_t fir_coefficients[FIR_LENGTH] = {0.0594,0.0930,0.1273,0.1642,0.1692,0.1642,0.1273,0.0930,0.0594};
 int16_t buffer_fir[FIR_LENGTH];
 int16_t counter_fir;
@@ -58,26 +61,23 @@ int16_t counter_fir;
 int16_t buffer_filter[FIR_LENGTH];
 int16_t counter_filter;
 
-float32_t fir_out_pitch, fir_out_roll;
-float32_t fir_in_pitch, fir_in_roll;
-
-// FIR filter instances
 arm_fir_instance_f32 fir_instance_pitch;
 arm_fir_instance_f32 fir_instance_roll;
 
 float32_t fir_state_pitch[FIR_LENGTH];
 float32_t fir_state_roll[FIR_LENGTH];
 
-// Motor Variables
-float motor_rps = 0.0;
+float32_t fir_out_pitch, fir_out_roll;
+float32_t fir_in_pitch, fir_in_roll;
 
-// CMPS12 Variables
+float32_t filtered_pitch, filtered_roll;
+// --------------------------------------------
+
+// CMPS12 Variables ============================
 CMPS12_Data cmps12;
 uint16_t angle, temp;
 int8_t pitch, roll;
-
-// Filtered Variables
-float32_t filtered_pitch, filtered_roll;
+// --------------------------------------------
 
 /* USER CODE END PV */
 

@@ -149,21 +149,6 @@ The results indicate that the filtering process was successful, as the graphs sh
 - For the **10th order filter**, with a passband of 15 Hz and a stopband of 50 Hz, similar results are observed, with frequencies above 50 Hz being significantly reduced.
 
 The missing frequency components in the filtered data correspond to the frequencies that fall outside the defined passband and stopband specifications, confirming that the filters are functioning as intended.
-
-## Step 9: Phase Delay Analysis
-
-The phase delay introduced by the filters is another important aspect of the filtering process. The phase delay results for the 7th and 10th order filters are shown in the following images:
-
-- **7th Order Phase Delay**: ![7th Order Phase Delay](docs/img/9_phase_delay_ord7th.jpg)
-- **10th Order Phase Delay**: ![10th Order Phase Delay](docs/img/7_phase_delay_ord11th.jpg)
-
-The phase delay plots illustrate how the filters affect the timing of the signal components. Each plot consists of three graphs corresponding to the X, Y, and Z axes. 
-
-- **Observation**: As the order of the filter increases, the phase delay also increases. This is a common characteristic of FIR filters, where higher-order filters tend to introduce more phase shift in the output signal.
-- The phase delay is crucial in applications where timing is important, as it can affect the synchronization of the filtered signals with other data sources.
-
-In summary, the phase delay results indicate that while the filters effectively attenuate unwanted frequencies, they also introduce a certain amount of delay, which must be considered in the overall system design and data interpretation.
-
 ---
 
 This concludes the analysis of the results obtained from the filtering process. The successful filtering of IMU data, along with the analysis of frequency response and phase delay, demonstrates the effectiveness of the implemented FIR filters on the STM32 platform.
